@@ -2,6 +2,7 @@
 
 void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
     if (cmd == "GAME_DATA") {
+        std::cout << cmd;
         if (args.size() == 10) {
             game_data.player1Y = stoi(args.at(0));
             game_data.player1X = stoi(args.at(4));
@@ -20,6 +21,9 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
         if (args.size() == 2) {
             game_data.team1Score = stoi(args.at(0));
         }
+    }
+    else if (cmd == "PLAYER_JOIN") {
+        std::cout << cmd;
     }
     else {
         std::cout << "Received: " << cmd << std::endl;
@@ -98,6 +102,45 @@ void MyGame::renderText(SDL_Renderer* renderer, TTF_Font* font, const std::strin
 }
 
 void MyGame::render(SDL_Renderer* renderer) {
+    // Colours
+    SDL_Color navy = { 0, 0, 128, 255 };
+    SDL_Color black = { 0, 0, 0, 255 };
+
+    // Render the screen
+    SDL_RenderClear(renderer);
+
+    // Define base colors for the "pitch" and lighter/darker shades
+    SDL_Color baseGreen = { 34, 139, 34, 255 }; // A grassy green
+    SDL_Color lighterGreen = { 50, 205, 50, 255 }; // Lighter green
+    SDL_Color darkerGreen = { 0, 100, 0, 255 }; // Darker green
+
+    for (int y = 0; y < 720; y++) {
+        // Calculate the interpolation factor based on the y-coordinate
+        float interpolationFactor = (float)(y % 40) / 40.0f; // Change 40 for larger/smaller stripes
+
+        // Alternate between lighter and darker green
+        SDL_Color stripeColor;
+        if ((y / 40) % 2 == 0) {
+            // Lighter green stripe
+            stripeColor.r = (Uint8)(baseGreen.r + interpolationFactor * (lighterGreen.r - baseGreen.r));
+            stripeColor.g = (Uint8)(baseGreen.g + interpolationFactor * (lighterGreen.g - baseGreen.g));
+            stripeColor.b = (Uint8)(baseGreen.b + interpolationFactor * (lighterGreen.b - baseGreen.b));
+        }
+        else {
+            // Darker green stripe
+            stripeColor.r = (Uint8)(baseGreen.r + interpolationFactor * (darkerGreen.r - baseGreen.r));
+            stripeColor.g = (Uint8)(baseGreen.g + interpolationFactor * (darkerGreen.g - baseGreen.g));
+            stripeColor.b = (Uint8)(baseGreen.b + interpolationFactor * (darkerGreen.b - baseGreen.b));
+        }
+
+        // Set the color for the current stripe
+        SDL_SetRenderDrawColor(renderer, stripeColor.r, stripeColor.g, stripeColor.b, 255);
+
+        // Draw the stripe
+        SDL_Rect lineRect = { 0, y, 1280, 1 };
+        SDL_RenderFillRect(renderer, &lineRect);
+    }
+
     // Render Images
     renderBackground(renderer);
 

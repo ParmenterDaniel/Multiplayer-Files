@@ -32,7 +32,7 @@ class MyGame {
         SDL_Rect player2 = { 600, 0, 10, 36 };
         SDL_Rect aiTeam2 = { 800, 400, 10 ,36 };
         SDL_Rect ball = { 400, 0, 10, 10 };
-        SDL_Rect goalLine1{ 45, 360, 10, 80 };
+        SDL_Rect goalLine1{ 42, 360, 8, 80 };
         SDL_Rect goalLine2{ 1225, 360, 5, 80 };
         int team1Score, team2Score = 0;
 
