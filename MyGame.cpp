@@ -22,8 +22,14 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
             game_data.team1Score = stoi(args.at(0));
         }
     }
-    else if (cmd == "PLAYER_JOIN") {
-        std::cout << cmd;
+    else if (cmd == "PLAYER_JOIN1" || cmd == "PLAYER_JOIN2") {
+        if (cmd == "PLAYER_JOIN1") {
+            game_data.player = 1;
+        }
+        else if (cmd == "PLAYER_JOIN2") {
+            game_data.player = 2;
+        }
+        std::cout << game_data.player;
     }
     else {
         std::cout << "Received: " << cmd << std::endl;
@@ -38,6 +44,7 @@ void MyGame::input(SDL_Event& event) {
     switch (event.key.keysym.sym) {
         case SDLK_w:
             send(event.type == SDL_KEYDOWN ? "W_DOWN" : "W_UP");
+            send(std::to_string(game_data.player));
             break;
         case SDLK_s:
             send(event.type == SDL_KEYDOWN ? "S_DOWN" : "S_UP");

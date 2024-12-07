@@ -22,6 +22,7 @@ static struct GameData {
     int player2X = 0;
     int team1Score = 0;
     int team2Score = 0;
+    int player = 0;
 } game_data;
 
 class MyGame {

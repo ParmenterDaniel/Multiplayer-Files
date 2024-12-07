@@ -111,7 +111,7 @@ static int on_send(void* socket_ptr) {
 }
 
 void renderImages(SDL_Renderer* renderer) {
-    game->loadBackgroundTexture(renderer, "assets/textures/Untitled.jpg");
+    game->loadBackgroundTexture(renderer, "assets/textures/Pitch.png");
 }
 
 SDL_Texture* renderText(const char* message, TTF_Font* font, SDL_Color color, SDL_Renderer* renderer) {
@@ -224,11 +224,11 @@ void load_connection_screen(SDL_Renderer* renderer, TTF_Font* font) {
     char portBuffer[6] = "55555";
     int ipLength = strlen(ipBuffer); //max 39
     int portLength = strlen(portBuffer); //max 5
-    bool typingIP = true;  // Start by typing the IP
+    bool typingIP = true;  // Player Initially Enters IP
     bool hasErrored = false;
     std::string connectionString = " ";
 
-    SDL_StartTextInput(); //allow text input from SDL
+    SDL_StartTextInput(); // Let User Enter Text
 
     bool quit = false;
     SDL_Event e;
@@ -286,7 +286,7 @@ void load_connection_screen(SDL_Renderer* renderer, TTF_Font* font) {
             }
         }
 
-        // Render the screen
+        // Draw Background
         SDL_RenderClear(renderer);
         for (int y = 0; y < 720; y++) {
             float interpolationFactor = (float)y / 720;
