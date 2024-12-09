@@ -25,9 +25,11 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
     else if (cmd == "PLAYER_JOIN1" || cmd == "PLAYER_JOIN2") {
         if (cmd == "PLAYER_JOIN1") {
             game_data.player = 1;
+            player1.setPlayerControlled(true);
         }
         else if (cmd == "PLAYER_JOIN2") {
             game_data.player = 2;
+            player2.setPlayerControlled(true);
         }
         std::cout << game_data.player;
     }
@@ -41,48 +43,139 @@ void MyGame::send(std::string message) {
 }
 
 void MyGame::input(SDL_Event& event) {
-    switch (event.key.keysym.sym) {
+    /*switch (event.key.keysym.sym) {
         case SDLK_w:
-            send(event.type == SDL_KEYDOWN ? "W_DOWN" : "W_UP");
-            send(std::to_string(game_data.player));
+            player2.left();
+            if (game_data.player == 1) {
+                send(event.type == SDL_KEYDOWN ? "W_DOWN" : "W_UP");
+            }
             break;
         case SDLK_s:
-            send(event.type == SDL_KEYDOWN ? "S_DOWN" : "S_UP");
+            if (game_data.player == 1) {
+                send(event.type == SDL_KEYDOWN ? "S_DOWN" : "S_UP");
+            }
             break;
         case SDLK_a:
-            send(event.type == SDL_KEYDOWN ? "A_DOWN" : "A_UP");
+            if (game_data.player == 1) {
+                send(event.type == SDL_KEYDOWN ? "A_DOWN" : "A_UP");
+            }
             break;
         case SDLK_d:
-            send(event.type == SDL_KEYDOWN ? "D_DOWN" : "D_UP");
+            if (game_data.player == 1) {
+                send(event.type == SDL_KEYDOWN ? "D_DOWN" : "D_UP");
+            }
             break;
         case SDLK_i:
-            send(event.type == SDL_KEYDOWN ? "I_DOWN" : "I_UP");
+            if (game_data.player == 2) {
+                send(event.type == SDL_KEYDOWN ? "I_DOWN" : "I_UP");
+            }
             break;
         case SDLK_k: 
-            send(event.type == SDL_KEYDOWN ? "K_DOWN" : "K_UP");
+            if (game_data.player == 2) {
+                send(event.type == SDL_KEYDOWN ? "K_DOWN" : "K_UP");
+            }
             break;
         case SDLK_j:
-            send(event.type == SDL_KEYDOWN ? "J_DOWN" : "J_UP");
+            if (game_data.player == 2) {
+                send(event.type == SDL_KEYDOWN ? "J_DOWN" : "J_UP");
+            }
             break;
         case SDLK_l:
-            send(event.type == SDL_KEYDOWN ? "L_DOWN" : "L_UP");
+            if (game_data.player == 2) {
+                send(event.type == SDL_KEYDOWN ? "L_DOWN" : "L_UP");
+            }
             break;
+    }*/
+
+    // New input handling /////////////////////////////////////////////////////////
+
+    const Uint8* state = SDL_GetKeyboardState(nullptr);
+
+    // Player 1
+    if (player1.isControlled()) {
+        // Handles Y Movement
+        if (state[SDL_SCANCODE_W]) {
+            player1.up();
+        }
+        else if (state[SDL_SCANCODE_S]) {
+            player1.down();
+        }
+        else {
+            player1.stopY();
+        }
+
+        // Handles X Movement
+        if (state[SDL_SCANCODE_A]) {
+            player1.left();
+        }
+        else if (state[SDL_SCANCODE_D]) {
+            player1.right();
+        }
+        else {
+            player1.stopX();
+        }
     }
+
+    if (player2.isControlled()) {
+        // Handles Y Movement
+        if (state[SDL_SCANCODE_W]) {
+            player2.up();
+        }
+        else if (state[SDL_SCANCODE_S]) {
+            player2.down();
+        }
+        else {
+            player2.stopY();
+        }
+
+        // Handles X Movement
+        if (state[SDL_SCANCODE_A]) {
+            player2.left();
+        }
+        else if (state[SDL_SCANCODE_D]) {
+            player2.right();
+        }
+        else {
+            player2.stopX();
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////
 }
 
 void MyGame::update() {
-    player1.y = game_data.player1Y;
-    player1.x = game_data.player1X;
+    /*
+    //player1.y = game_data.player1Y;
+    //player1.x = game_data.player1X;
+    player1.setPosition(game_data.player1X, game_data.player1Y);
     aiTeam1.x = game_data.aiTeam1X;
     aiTeam1.y = game_data.aiTeam1Y;
-    player2.y = game_data.player2Y;
-    player2.x = game_data.player2X;
+    //player2.y = game_data.player2Y;
+    //player2.x = game_data.player2X;
+    player2.setPosition(game_data.player2X, game_data.player2Y);
     aiTeam2.x = game_data.aiTeam2X;
     aiTeam2.y = game_data.aiTeam2Y;
     ball.x = game_data.ballX;
     ball.y = game_data.ballY;
     team1Score = game_data.team1Score;
     team2Score = game_data.team2Score;
+    */
+    
+
+
+    // Client side movement ////////////////////////////////////////////////////////
+
+    // Example deltaTime calculation
+    static Uint32 lastTime = SDL_GetTicks();
+    Uint32 currentTime = SDL_GetTicks();
+    float deltaTime = (currentTime - lastTime) / 1000.0f;
+    lastTime = currentTime;
+
+    // Update player positions
+    player1.update(deltaTime);
+    player2.update(deltaTime);
+
+    /////////////////////////////////////////////////////////////////////////////////
 }
 
 // Text Function
@@ -153,12 +246,15 @@ void MyGame::render(SDL_Renderer* renderer) {
 
     // Team 1 White
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderFillRect(renderer, &player1);
+    //SDL_RenderFillRect(renderer, &player1);
+    //SDL_RenderFillRect(renderer, &player1.getRect());
+    player1.render(renderer);
     SDL_RenderFillRect(renderer, &aiTeam1);
 
     // Team 2 Grey
     SDL_SetRenderDrawColor(renderer, 50, 255, 255, 255);
-    SDL_RenderFillRect(renderer, &player2);
+    //SDL_RenderFillRect(renderer, &player2.getRect());
+    player2.render(renderer);
     SDL_RenderFillRect(renderer, &aiTeam2);
 
     // Ball Blue
@@ -202,6 +298,14 @@ void MyGame::loadBackgroundTexture(SDL_Renderer* renderer, const char* filePath)
     SDL_QueryTexture(backgroundTexture, NULL, NULL, &width, &height);
     backgroundRect = { 50, 80, width, height };  // Set rect to the size of the texture
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MyGame::loadPlayerTextures(SDL_Renderer* renderer) {
+    // Load textures for each player
+    player1.loadTexture(renderer, "assets/textures/SpriteAV1.png");
+    player2.loadTexture(renderer, "assets/textures/SpriteBV1.png");
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Function to render the background texture
 void MyGame::renderBackground(SDL_Renderer* renderer) {

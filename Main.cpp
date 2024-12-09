@@ -111,6 +111,7 @@ static int on_send(void* socket_ptr) {
 }
 
 void renderImages(SDL_Renderer* renderer) {
+    game->loadPlayerTextures(renderer);
     game->loadBackgroundTexture(renderer, "assets/textures/Pitch.png");
 }
 
