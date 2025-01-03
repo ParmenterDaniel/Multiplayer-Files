@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string>
 #include <Windows.h>
+#include <SDL_mixer.h>
 
 #include "MyGame.h"
 
@@ -43,6 +44,15 @@ static int on_receive(void* socket_ptr) {
     // TODO: while(), rather than do
     do {
         received = SDLNet_TCP_Recv(socket, message, message_length);
+
+        if (received <= 0) {
+            std::cerr << "Connection to server lost" << SDLNet_GetError() << std::endl;
+
+            // Handle closing game in the game loop
+            game->on_receive("CONNECTION_LOST", std::vector<std::string>{});
+            break;
+        }
+
         message[received] = '\0';
 
         char* pch = strtok(message, ",");
@@ -110,9 +120,34 @@ static int on_send(void* socket_ptr) {
     return 0;
 }
 
+static int on_send_heartbeat(void* socket_ptr) {
+    TCPsocket socket = (TCPsocket)socket_ptr;
+
+    while (is_running) {
+        if (game->heartbeatMessages.size() > 0) {
+            string message = "CLIENT_DATA";
+
+            for (auto m : game->heartbeatMessages) {
+                message += "," + m;
+            }
+
+            game->heartbeatMessages.clear();
+
+            cout << "Sending_TCP: " << message << endl;
+
+            SDLNet_TCP_Send(socket, message.c_str(), message.length());
+        }
+
+        SDL_Delay(1);
+    }
+
+    return 0;
+}
+
 void renderImages(SDL_Renderer* renderer) {
     game->loadPlayerTextures(renderer);
-    game->loadBackgroundTexture(renderer, "assets/textures/Pitch.png");
+    game->loadBackgroundTexture(renderer, "assets/textures/PitchFinal.jpg");
+    game->loadScoreboardContainer(renderer, "assets/textures/Scoreboard1.png");
 }
 
 SDL_Texture* renderText(const char* message, TTF_Font* font, SDL_Color color, SDL_Renderer* renderer) {
@@ -399,6 +434,22 @@ int main(int argc, char** argv) {
         exit(2);
     }
 
+    // Initialise SDL audio
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        std::cerr << "Failed to initialize SDL audio: " << SDL_GetError() << std::endl;
+        return -1;
+    }
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "SDL_mixer initialization failed: " << Mix_GetError() << std::endl;
+        SDL_Quit();
+        return -1;
+    }
+
+    // Load background music
+    Mix_Chunk* sound = Mix_LoadWAV("assets/audio/Erika.mp3");
+    Mix_PlayChannel(-1, sound, 0);
+
     // Create window
     SDL_Window* window = SDL_CreateWindow("Striker!", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_SHOWN);
     if (!window) {
@@ -419,6 +470,7 @@ int main(int argc, char** argv) {
     {
         SDL_Thread* recvThread = SDL_CreateThread(on_receive, "ConnectionReceiveThread", (void*)overallSocket);
         SDL_Thread* sendThread = SDL_CreateThread(on_send, "ConnectionSendThread", (void*)overallSocket);
+        SDL_Thread* sendHeartbeatThread = SDL_CreateThread(on_send_heartbeat, "HeartbeatSendThread", (void*)overallSocket);
 
         //SDL_SetWindowTitle(window, "Lobby");
         load_lobby(renderer, font);
@@ -434,9 +486,14 @@ int main(int argc, char** argv) {
         std::cout << "Waiting for threads to exit...";
         SDL_WaitThread(recvThread, &threadReturnValue);
         SDL_WaitThread(sendThread, &threadReturnValue);
+        SDL_WaitThread(sendHeartbeatThread, &threadReturnValue);
     }
 
     delete game;
+
+    // Clean up audio
+    Mix_FreeChunk(sound);
+    Mix_CloseAudio();
 
     // Close connection to the server
     SDLNet_TCP_Close(overallSocket);

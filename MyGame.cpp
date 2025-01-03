@@ -2,7 +2,7 @@
 
 void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
     if (cmd == "GAME_DATA") {
-        std::cout << cmd;
+        //std::cout << cmd;
         if (args.size() == 10) {
             game_data.player1Y = stoi(args.at(0));
             game_data.player1X = stoi(args.at(4));
@@ -33,6 +33,36 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
         }
         std::cout << game_data.player;
     }
+    else if (cmd == "GAME_ENDED") {
+        if (stoi(args.at(0)) == 1) {
+            std::cout << "Player 1 wins";
+            if (game_data.player == 1) {
+                winner = "You Win!";
+            }
+            else if (game_data.player == 2) {
+                winner = "You Lose!";
+            }
+        }
+        else if (stoi(args.at(0)) == 2) {
+            std::cout << "Player 2 wins";
+            if (game_data.player == 1) {
+                winner = "You Lose!";
+            }
+            else if (game_data.player == 2) {
+                winner = "You Win!";
+            }
+        }
+        gameOver = true;
+    }
+    else if (cmd == "CONNECTION_LOST") {
+        std::cout << "connection lost!";
+        serverLost = true;
+    }
+    else if (cmd == "OPPONENT_DISCONNECT") {
+        std::cout << "You Win!";
+        opponentDisconnect = true;
+        gameOver = true;
+    }
     else {
         std::cout << "Received: " << cmd << std::endl;
     }
@@ -42,10 +72,13 @@ void MyGame::send(std::string message) {
     messages.push_back(message);
 }
 
+void MyGame::sendHeartbeat(std::string message) {
+    heartbeatMessages.push_back(message);
+}
+
 void MyGame::input(SDL_Event& event) {
-    /*switch (event.key.keysym.sym) {
+    switch (event.key.keysym.sym) {
         case SDLK_w:
-            player2.left();
             if (game_data.player == 1) {
                 send(event.type == SDL_KEYDOWN ? "W_DOWN" : "W_UP");
             }
@@ -85,7 +118,7 @@ void MyGame::input(SDL_Event& event) {
                 send(event.type == SDL_KEYDOWN ? "L_DOWN" : "L_UP");
             }
             break;
-    }*/
+    }
 
     // New input handling /////////////////////////////////////////////////////////
 
@@ -144,38 +177,47 @@ void MyGame::input(SDL_Event& event) {
 }
 
 void MyGame::update() {
-    /*
-    //player1.y = game_data.player1Y;
-    //player1.x = game_data.player1X;
-    player1.setPosition(game_data.player1X, game_data.player1Y);
-    aiTeam1.x = game_data.aiTeam1X;
-    aiTeam1.y = game_data.aiTeam1Y;
-    //player2.y = game_data.player2Y;
-    //player2.x = game_data.player2X;
-    player2.setPosition(game_data.player2X, game_data.player2Y);
-    aiTeam2.x = game_data.aiTeam2X;
-    aiTeam2.y = game_data.aiTeam2Y;
-    ball.x = game_data.ballX;
-    ball.y = game_data.ballY;
-    team1Score = game_data.team1Score;
-    team2Score = game_data.team2Score;
-    */
-    
+    if (gameOver == false) {
+        
+        //player1.y = game_data.player1Y;
+        //player1.x = game_data.player1X;
+        player1.setPosition(game_data.player1X, game_data.player1Y);
+        //aiTeam1.x = game_data.aiTeam1X;
+        //aiTeam1.y = game_data.aiTeam1Y;
+        aiTeam1.setPosition(game_data.aiTeam1X, game_data.aiTeam1Y);
+        //player2.y = game_data.player2Y;
+        //player2.x = game_data.player2X;
+        player2.setPosition(game_data.player2X, game_data.player2Y);
+        //aiTeam2.x = game_data.aiTeam2X;
+        //aiTeam2.y = game_data.aiTeam2Y;
+        aiTeam2.setPosition(game_data.aiTeam2X, game_data.aiTeam2Y);
+        //ball.x = game_data.ballX;
+        //ball.y = game_data.ballY;
+        ball.setPosition(game_data.ballX, game_data.ballY);
+        team1Score = game_data.team1Score;
+        team2Score = game_data.team2Score;
+        
 
 
-    // Client side movement ////////////////////////////////////////////////////////
 
-    // Example deltaTime calculation
-    static Uint32 lastTime = SDL_GetTicks();
-    Uint32 currentTime = SDL_GetTicks();
-    float deltaTime = (currentTime - lastTime) / 1000.0f;
-    lastTime = currentTime;
+        // Client side movement ////////////////////////////////////////////////////////
 
-    // Update player positions
-    player1.update(deltaTime);
-    player2.update(deltaTime);
+        // Example deltaTime calculation
+        static Uint32 lastTime = SDL_GetTicks();
+        Uint32 currentTime = SDL_GetTicks();
+        float deltaTime = (currentTime - lastTime) / 1000.0f;
+        lastTime = currentTime;
 
-    /////////////////////////////////////////////////////////////////////////////////
+        // Update player positions
+        //player1.update(deltaTime);
+        //player2.update(deltaTime);
+
+        /////////////////////////////////////////////////////////////////////////////////
+
+        // Heartbeats ///////////////////////////////////////////////////////////////////
+        prepareHeartbeat();
+        /////////////////////////////////////////////////////////////////////////////////
+    }
 }
 
 // Text Function
@@ -205,6 +247,7 @@ void MyGame::render(SDL_Renderer* renderer) {
     // Colours
     SDL_Color navy = { 0, 0, 128, 255 };
     SDL_Color black = { 0, 0, 0, 255 };
+    SDL_Color white = { 255, 255, 255, 255 };
 
     // Render the screen
     SDL_RenderClear(renderer);
@@ -243,44 +286,69 @@ void MyGame::render(SDL_Renderer* renderer) {
 
     // Render Images
     renderBackground(renderer);
-
-    // Team 1 White
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    //SDL_RenderFillRect(renderer, &player1);
-    //SDL_RenderFillRect(renderer, &player1.getRect());
-    player1.render(renderer);
-    SDL_RenderFillRect(renderer, &aiTeam1);
-
-    // Team 2 Grey
-    SDL_SetRenderDrawColor(renderer, 50, 255, 255, 255);
-    //SDL_RenderFillRect(renderer, &player2.getRect());
-    player2.render(renderer);
-    SDL_RenderFillRect(renderer, &aiTeam2);
-
-    // Ball Blue
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 50);
-    SDL_RenderFillRect(renderer, &ball);
-
-    // Other Objects 
-    SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-    SDL_RenderFillRect(renderer, &goalLine1);
-    SDL_RenderFillRect(renderer, &goalLine2);
+    renderScoreboard(renderer);
 
     // Text Handling
-    // Set up font and score text
+        // Set up font and score text
     TTF_Font* font = TTF_OpenFont("assets/fonts/Arial.ttf", 24);
     if (!font) {
         std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
         return;
     }
 
-    SDL_Color white = { 255, 255, 255, 255 }; // White color
-    std::string scoreText = "Team 1 " + std::to_string(team1Score) + " - " + std::to_string(team2Score) + " Team 2";
+    if (serverLost == false) {
+        if (gameOver == false) {
+            // Team 1 White
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            //SDL_RenderFillRect(renderer, &player1);
+            //SDL_RenderFillRect(renderer, &player1.getRect());
+            player1.render(renderer);
+            //SDL_RenderFillRect(renderer, &aiTeam1);
+            aiTeam1.render(renderer);
 
-    // Render the score at position (10, 10)
-    renderText(renderer, font, scoreText, 50, 30, white);
+            // Team 2 Grey
+            SDL_SetRenderDrawColor(renderer, 50, 255, 255, 255);
+            //SDL_RenderFillRect(renderer, &player2.getRect());
+            player2.render(renderer);
+            //SDL_RenderFillRect(renderer, &aiTeam2);
+            aiTeam2.render(renderer);
+
+            // Ball Blue
+            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 50);
+            //SDL_RenderFillRect(renderer, &ball);
+            ball.render(renderer);
+
+            // Other Objects 
+            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+            //SDL_RenderFillRect(renderer, &goalLine1);
+            goalLine1.render(renderer);
+            //SDL_RenderFillRect(renderer, &goalLine2);
+            goalLine2.render(renderer);
+
+            std::string scoreText = "Team 1 " + std::to_string(team1Score) + " - " + std::to_string(team2Score) + " Team 2";
+
+            // Render the score at position (10, 10)
+            renderText(renderer, font, scoreText, 60, 30, white);
+        }
+        else if (gameOver == true && opponentDisconnect == false) {
+            SDL_SetRenderDrawColor(renderer, 50, 255, 255, 255);
+            SDL_RenderClear(renderer);
+            renderText(renderer, font, winner, 50, 30, white);
+        }
+        else if (opponentDisconnect = true && gameOver == true) {
+            SDL_SetRenderDrawColor(renderer, 50, 255, 255, 255);
+            SDL_RenderClear(renderer);
+            renderText(renderer, font, "Opponent Disconnected, you win!", 50, 30, white);
+        }
+    }
+    else if (serverLost == true) {
+        SDL_SetRenderDrawColor(renderer, 120, 255, 255, 255);
+        SDL_RenderClear(renderer);
+        renderText(renderer, font, "Connection to server lost", 50, 30, white);
+    }
 
     TTF_CloseFont(font);
+    
 }
 
 // Image Handling
@@ -302,8 +370,13 @@ void MyGame::loadBackgroundTexture(SDL_Renderer* renderer, const char* filePath)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MyGame::loadPlayerTextures(SDL_Renderer* renderer) {
     // Load textures for each player
-    player1.loadTexture(renderer, "assets/textures/SpriteAV1.png");
-    player2.loadTexture(renderer, "assets/textures/SpriteBV1.png");
+    player1.loadTexture(renderer, "assets/textures/Team1Player.png");
+    player2.loadTexture(renderer, "assets/textures/Team2Player.png");
+    aiTeam1.loadTexture(renderer, "assets/textures/Team1AI.png");
+    aiTeam2.loadTexture(renderer, "assets/textures/Team2AI.png");
+    ball.loadTexture(renderer, "assets/textures/BallBrown2.png");
+    goalLine1.loadTexture(renderer, "assets/textures/GoalLeft.jpg");
+    goalLine2.loadTexture(renderer, "assets/textures/GoalRight.jpg");
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -319,5 +392,31 @@ void MyGame::cleanupBackground() {
     if (backgroundTexture != nullptr) {
         SDL_DestroyTexture(backgroundTexture);
         backgroundTexture = nullptr;
+    }
+}
+
+void MyGame::loadScoreboardContainer(SDL_Renderer* renderer, const char* filePath) {
+    scoreboardTexture = IMG_LoadTexture(renderer, filePath);
+    if (scoreboardTexture == nullptr) {
+        printf("Failed to load scoreboard texture: %s\n", SDL_GetError());
+        return;
+    }
+
+    int width, height;
+    SDL_QueryTexture(scoreboardTexture, NULL, NULL, &width, &height);
+    scoreboardRect = { 50, 20, width, height};  // Set rect to the size of the texture
+}
+
+void MyGame::renderScoreboard(SDL_Renderer* renderer) {
+    if (scoreboardTexture != nullptr) {
+        SDL_RenderCopy(renderer, scoreboardTexture, NULL, &scoreboardRect);
+    }
+}
+
+// Send heartbeat to server
+void MyGame::prepareHeartbeat() {
+    if (SDL_GetTicks() > nextSendTime) {
+        sendHeartbeat("HEARTBEAT, " + std::to_string(game_data.player));
+        nextSendTime = SDL_GetTicks() + 1000;
     }
 }

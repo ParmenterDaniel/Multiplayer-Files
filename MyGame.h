@@ -136,25 +136,217 @@ public:
     }
 };
 
+class AIPlayer {
+private:
+    SDL_Rect rect; // Player's position and size
+    SDL_Texture* texture;   // Player's texture (sprite)
+
+    // Movement
+    float Speed = 240;
+    float xVelocity;
+    float yVelocity;
+
+public:
+    ///////////////////////////////////////////////////////////////////
+    // Constructor to initialize the player
+    AIPlayer(int x, int y, int width, int height)
+        : rect({ x, y, width, height }), texture(nullptr), xVelocity(0.0f), yVelocity(0.0f) {
+    }
+
+    // Destructor to clean up the texture
+    ~AIPlayer() {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+    }
+
+    // Load texture for the player
+    void loadTexture(SDL_Renderer* renderer, const char* filePath) {
+        SDL_Surface* surface = IMG_Load(filePath);
+        if (!surface) {
+            SDL_Log("Failed to load AI Player image: %s, %s", filePath, IMG_GetError());
+            return;
+        }
+        texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        if (!texture) {
+            SDL_Log("Failed to create texture: %s", SDL_GetError());
+        }
+    }
+
+    // Render the player
+    void render(SDL_Renderer* renderer) {
+        if (texture) {
+            SDL_RenderCopy(renderer, texture, nullptr, &rect);
+        }
+        else {
+            // Optionally render a placeholder if no texture is loaded
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
+    ////////////////////////////////////////////////////////////////
+
+    // Accessor for the SDL_Rect
+    SDL_Rect getRect() const {
+        return rect;
+    }
+
+    // For now, this just updates the SDL_Rect position (could be extended later)
+    void setPosition(int x, int y) {
+        rect.x = x;
+        rect.y = y;
+    }
+};
+
+class Ball {
+private:
+    SDL_Rect rect; // Player's position and size
+    SDL_Texture* texture;   // Player's texture (sprite)
+
+    // Movement
+    float Speed = 240;
+    float xVelocity;
+    float yVelocity;
+
+public:
+    ///////////////////////////////////////////////////////////////////
+    // Constructor to initialize the player
+    Ball(int x, int y, int width, int height)
+        : rect({ x, y, width, height }), texture(nullptr), xVelocity(0.0f), yVelocity(0.0f) {
+    }
+
+    // Destructor to clean up the texture
+    ~Ball() {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+    }
+
+    // Load texture for the player
+    void loadTexture(SDL_Renderer* renderer, const char* filePath) {
+        SDL_Surface* surface = IMG_Load(filePath);
+        if (!surface) {
+            SDL_Log("Failed to load AI Player image: %s, %s", filePath, IMG_GetError());
+            return;
+        }
+        texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        if (!texture) {
+            SDL_Log("Failed to create texture: %s", SDL_GetError());
+        }
+    }
+
+    // Render the player
+    void render(SDL_Renderer* renderer) {
+        if (texture) {
+            SDL_RenderCopy(renderer, texture, nullptr, &rect);
+        }
+        else {
+            // Optionally render a placeholder if no texture is loaded
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
+    ////////////////////////////////////////////////////////////////
+
+    // Accessor for the SDL_Rect
+    SDL_Rect getRect() const {
+        return rect;
+    }
+
+    // For now, this just updates the SDL_Rect position (could be extended later)
+    void setPosition(int x, int y) {
+        rect.x = x;
+        rect.y = y;
+    }
+};
+
+class Goal {
+private:
+    SDL_Rect rect; // Player's position and size
+    SDL_Texture* texture;   // Player's texture (sprite)
+
+public:
+    ///////////////////////////////////////////////////////////////////
+    // Constructor to initialize the player
+    Goal(int x, int y, int width, int height)
+        : rect({ x, y, width, height }), texture(nullptr) {
+    }
+
+    // Destructor to clean up the texture
+    ~Goal() {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+    }
+
+    // Load texture for the player
+    void loadTexture(SDL_Renderer* renderer, const char* filePath) {
+        SDL_Surface* surface = IMG_Load(filePath);
+        if (!surface) {
+            SDL_Log("Failed to load Goal image: %s, %s", filePath, IMG_GetError());
+            return;
+        }
+        texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        if (!texture) {
+            SDL_Log("Failed to create texture: %s", SDL_GetError());
+        }
+    }
+
+    // Render the player
+    void render(SDL_Renderer* renderer) {
+        if (texture) {
+            SDL_RenderCopy(renderer, texture, nullptr, &rect);
+        }
+        else {
+            // Render a placeholder if no texture is loaded
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
+    ////////////////////////////////////////////////////////////////
+
+    // Accessor for the SDL_Rect
+    SDL_Rect getRect() const {
+        return rect;
+    }
+};
+
 class MyGame {
 
     private:
         //SDL_Rect player1 = { 20, 0, 10, 36 };
         Player player1{ 320, 550, 10, 36 };
-        SDL_Rect aiTeam1 = { 80, 400, 10 ,36 };
+        //SDL_Rect aiTeam1 = { 80, 400, 10 ,36 };
+        AIPlayer aiTeam1{ 80, 400, 10 ,36 };
         //SDL_Rect player2 = { 600, 0, 10, 36 };
         Player player2{ 940, 550, 10, 36 };
-        SDL_Rect aiTeam2 = { 800, 400, 10 ,36 };
-        SDL_Rect ball = { 400, 0, 10, 10 };
-        SDL_Rect goalLine1{ 42, 360, 8, 80 };
-        SDL_Rect goalLine2{ 1225, 360, 5, 80 };
+        //SDL_Rect aiTeam2 = { 800, 400, 10 ,36 };
+        AIPlayer aiTeam2{ 800, 400, 10 ,36 };
+        //SDL_Rect ball = { 400, 0, 10, 10 };
+        Ball ball = { 400, 360, 10, 10 };
+        //SDL_Rect goalLine1{ 42, 360, 36, 80 };
+        Goal goalLine1{ 14, 360, 36, 80 };
+        //SDL_Rect goalLine2{ 1225, 360, 36, 80 };
+        Goal goalLine2{ 1225, 360, 36, 80 };
         int team1Score, team2Score = 0;
+        bool gameOver = false;
+        bool serverLost = false;
+        bool opponentDisconnect = false;
+        std::string winner;
 
         SDL_Texture* backgroundTexture = nullptr;
         SDL_Rect backgroundRect;
 
+        SDL_Texture* scoreboardTexture = nullptr;
+        SDL_Rect scoreboardRect;
+
     public:
         std::vector<std::string> messages;
+        std::vector<std::string> heartbeatMessages;
+        Uint32 nextSendTime = SDL_GetTicks();
 
         void on_receive(std::string message, std::vector<std::string>& args);
         void send(std::string message);
@@ -167,9 +359,11 @@ class MyGame {
         // Image handling
         // Function declaration to load the background texture
         void loadBackgroundTexture(SDL_Renderer* renderer, const char* filePath);
+        void loadScoreboardContainer(SDL_Renderer* renderer, const char* filePath);
 
         // Function declaration to render the background texture
         void renderBackground(SDL_Renderer* renderer);
+        void renderScoreboard(SDL_Renderer* renderer);
 
         // Function to cleanup background texture
         void cleanupBackground();
@@ -177,7 +371,18 @@ class MyGame {
         ///////////////////////////////////////////////////////////////////////////
         void loadPlayerTextures(SDL_Renderer* renderer);
         ///////////////////////////////////////////////////////////////////////////
+
+        // Handle Connection loss on server close//////////////////////////////////
+        void handleServerClose(SDL_Renderer* renderer);
+        //////////////////////////////////////////////////////////////////////////
+
+        // Handle heartbeats /////////////////////////////////////////////////////
+        void prepareHeartbeat();
+        void sendHeartbeat(std::string message);
+        //////////////////////////////////////////////////////////////////////////
 };
+
+
 
 
 
