@@ -8,6 +8,7 @@
 #include "SDL.h"
 #include "SDL_ttf.h"
 #include "SDL_image.h"
+#include <SDL_mixer.h>
 
 static struct GameData {
     int player1Y = 0;
@@ -335,6 +336,7 @@ class MyGame {
         bool gameOver = false;
         bool serverLost = false;
         bool opponentDisconnect = false;
+        bool isWinner;
         std::string winner;
 
         SDL_Texture* backgroundTexture = nullptr;
@@ -342,6 +344,12 @@ class MyGame {
 
         SDL_Texture* scoreboardTexture = nullptr;
         SDL_Rect scoreboardRect;
+
+        SDL_Texture* indicatorTexture = nullptr;
+        SDL_Rect indicatorRect;
+
+        Mix_Chunk* goalSound;
+        Mix_Chunk* kickSound;
 
     public:
         std::vector<std::string> messages;
@@ -360,10 +368,12 @@ class MyGame {
         // Function declaration to load the background texture
         void loadBackgroundTexture(SDL_Renderer* renderer, const char* filePath);
         void loadScoreboardContainer(SDL_Renderer* renderer, const char* filePath);
+        void loadIndicatorContainer(SDL_Renderer* renderer, const char* filePath);
 
         // Function declaration to render the background texture
         void renderBackground(SDL_Renderer* renderer);
         void renderScoreboard(SDL_Renderer* renderer);
+        void renderIndicator(SDL_Renderer* renderer);
 
         // Function to cleanup background texture
         void cleanupBackground();
@@ -379,6 +389,11 @@ class MyGame {
         // Handle heartbeats /////////////////////////////////////////////////////
         void prepareHeartbeat();
         void sendHeartbeat(std::string message);
+        //////////////////////////////////////////////////////////////////////////
+
+        // Audio Handling ////////////////////////////////////////////////////////
+        void loadAudio();
+        void playSoundEffect(const std::string& soundName);
         //////////////////////////////////////////////////////////////////////////
 };
 

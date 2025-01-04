@@ -109,7 +109,7 @@ static int on_send(void* socket_ptr) {
 
             game->messages.clear();
 
-            cout << "Sending_TCP: " << message << endl;
+            //cout << "Sending_TCP: " << message << endl;
 
             SDLNet_TCP_Send(socket, message.c_str(), message.length());
         }
@@ -133,7 +133,7 @@ static int on_send_heartbeat(void* socket_ptr) {
 
             game->heartbeatMessages.clear();
 
-            cout << "Sending_TCP: " << message << endl;
+            //cout << "Sending_TCP: " << message << endl;
 
             SDLNet_TCP_Send(socket, message.c_str(), message.length());
         }
@@ -148,6 +148,7 @@ void renderImages(SDL_Renderer* renderer) {
     game->loadPlayerTextures(renderer);
     game->loadBackgroundTexture(renderer, "assets/textures/PitchFinal.jpg");
     game->loadScoreboardContainer(renderer, "assets/textures/Scoreboard1.png");
+    game->loadIndicatorContainer(renderer, "assets/textures/Scoreboard1.png");
 }
 
 SDL_Texture* renderText(const char* message, TTF_Font* font, SDL_Color color, SDL_Renderer* renderer) {
@@ -447,8 +448,8 @@ int main(int argc, char** argv) {
     }
 
     // Load background music
-    Mix_Chunk* sound = Mix_LoadWAV("assets/audio/Erika.mp3");
-    Mix_PlayChannel(-1, sound, 0);
+    Mix_Music* sound = Mix_LoadMUS("assets/audio/Background.mp3");
+    Mix_PlayMusic(sound, 0);
 
     // Create window
     SDL_Window* window = SDL_CreateWindow("Striker!", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_SHOWN);
@@ -492,7 +493,7 @@ int main(int argc, char** argv) {
     delete game;
 
     // Clean up audio
-    Mix_FreeChunk(sound);
+    Mix_FreeMusic(sound);
     Mix_CloseAudio();
 
     // Close connection to the server
