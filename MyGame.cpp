@@ -20,6 +20,7 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
         std::cout << "Player1 Score = " << stoi(args.at(0)) << "    " << "Player2 Score = " << stoi(args.at(1));
         if (args.size() == 2) {
             game_data.team1Score = stoi(args.at(0));
+            game_data.team2Score = stoi(args.at(1));
         }
     }
     else if (cmd == "PLAYER_JOIN1" || cmd == "PLAYER_JOIN2") {
@@ -38,18 +39,22 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
             std::cout << "Player 1 wins";
             if (game_data.player == 1) {
                 winner = "You Win!";
+                isWinner = true;
             }
             else if (game_data.player == 2) {
                 winner = "You Lose!";
+                isWinner = false;
             }
         }
         else if (stoi(args.at(0)) == 2) {
             std::cout << "Player 2 wins";
             if (game_data.player == 1) {
                 winner = "You Lose!";
+                isWinner = false;
             }
             else if (game_data.player == 2) {
                 winner = "You Win!";
+                isWinner = true;
             }
         }
         gameOver = true;
@@ -62,6 +67,13 @@ void MyGame::on_receive(std::string cmd, std::vector<std::string>& args) {
         std::cout << "You Win!";
         opponentDisconnect = true;
         gameOver = true;
+    }
+    else if (cmd == "AUDIO") {
+        if (args.size() == 10) {
+            if (stoi(args.at(1)) == 2) {
+                //playSoundEffect("goal");
+            }
+        }
     }
     else {
         std::cout << "Received: " << cmd << std::endl;
@@ -287,6 +299,7 @@ void MyGame::render(SDL_Renderer* renderer) {
     // Render Images
     renderBackground(renderer);
     renderScoreboard(renderer);
+    renderIndicator(renderer);
 
     // Text Handling
         // Set up font and score text
@@ -327,24 +340,75 @@ void MyGame::render(SDL_Renderer* renderer) {
 
             std::string scoreText = "Team 1 " + std::to_string(team1Score) + " - " + std::to_string(team2Score) + " Team 2";
 
-            // Render the score at position (10, 10)
+            // Render the score & team indicator
             renderText(renderer, font, scoreText, 60, 30, white);
+            std::string team = "Controlling: Team " + std::to_string(game_data.player);
+            renderText(renderer, font, team, 1000, 30, white);
         }
-        else if (gameOver == true && opponentDisconnect == false) {
-            SDL_SetRenderDrawColor(renderer, 50, 255, 255, 255);
+        else if (gameOver == true && opponentDisconnect == false && isWinner == true) {
             SDL_RenderClear(renderer);
-            renderText(renderer, font, winner, 50, 30, white);
+            for (int y = 0; y < 720; y++) {
+                float interpolationFactor = (float)y / 720;
+
+                Uint8 r = (Uint8)(128 + interpolationFactor * (255 - 128));  // Purple to Gold (red component)
+                Uint8 g = (Uint8)(0 + interpolationFactor * (215 - 0));      // Purple to Gold (green component)
+                Uint8 b = (Uint8)(128 + interpolationFactor * (0 - 128));    // Purple to Gold (blue component)
+
+                SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+
+                SDL_Rect lineRect = { 0, y, 1280, 1 }; // Full-width rectangle for each line
+                SDL_RenderFillRect(renderer, &lineRect);
+            }
+            renderText(renderer, font, winner, 550, 300, white);
+        }
+        else if (gameOver == true && opponentDisconnect == false && isWinner == false) {
+            SDL_RenderClear(renderer);
+            for (int y = 0; y < 720; y++) {
+                float interpolationFactor = (float)y / 720;
+
+                Uint8 r = (Uint8)(139 + interpolationFactor * (64 - 139));  // Dark Red to Dark Grey (red component)
+                Uint8 g = (Uint8)(0 + interpolationFactor * (64 - 0));      // Dark Red to Dark Grey (green component)
+                Uint8 b = (Uint8)(0 + interpolationFactor * (64 - 0));      // Dark Red to Dark Grey (blue component)
+
+                SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+
+                SDL_Rect lineRect = { 0, y, 1280, 1 }; // Full-width rectangle for each line
+                SDL_RenderFillRect(renderer, &lineRect);
+            }
+            renderText(renderer, font, winner, 550, 300, white);
         }
         else if (opponentDisconnect = true && gameOver == true) {
-            SDL_SetRenderDrawColor(renderer, 50, 255, 255, 255);
             SDL_RenderClear(renderer);
-            renderText(renderer, font, "Opponent Disconnected, you win!", 50, 30, white);
+            for (int y = 0; y < 720; y++) {
+                float interpolationFactor = (float)y / 720;
+
+                Uint8 r = (Uint8)(255 + interpolationFactor * (25 - 255));  // Gold to Midnight Blue (red component)
+                Uint8 g = (Uint8)(215 + interpolationFactor * (25 - 215)); // Gold to Midnight Blue (green component)
+                Uint8 b = (Uint8)(0 + interpolationFactor * (112 - 0));    // Gold to Midnight Blue (blue component)
+
+                SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+
+                SDL_Rect lineRect = { 0, y, 1280, 1 }; // Full-width rectangle for each line
+                SDL_RenderFillRect(renderer, &lineRect);
+            }
+            renderText(renderer, font, "Opponent Disconnected, you win!", 450, 300, white);
         }
     }
     else if (serverLost == true) {
-        SDL_SetRenderDrawColor(renderer, 120, 255, 255, 255);
         SDL_RenderClear(renderer);
-        renderText(renderer, font, "Connection to server lost", 50, 30, white);
+        for (int y = 0; y < 720; y++) {
+            float interpolationFactor = (float)y / 720;
+
+            Uint8 r = (Uint8)(139 + interpolationFactor * (48 - 139)); // Dark red to purple-black
+            Uint8 g = (Uint8)(0 + interpolationFactor * (0 - 0));      // Constant zero for green
+            Uint8 b = (Uint8)(0 + interpolationFactor * (48 - 0));     // Red to purple-black transition
+
+            SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+
+            SDL_Rect lineRect = { 0, y, 1280, 1 };
+            SDL_RenderFillRect(renderer, &lineRect);
+        }
+        renderText(renderer, font, "ERROR: Connection to server lost!", 450, 300, white);
     }
 
     TTF_CloseFont(font);
@@ -413,10 +477,58 @@ void MyGame::renderScoreboard(SDL_Renderer* renderer) {
     }
 }
 
+void MyGame::loadIndicatorContainer(SDL_Renderer* renderer, const char* filePath) {
+    indicatorTexture = IMG_LoadTexture(renderer, filePath);
+    if (indicatorTexture == nullptr) {
+        printf("Failed to load scoreboard texture: %s\n", SDL_GetError());
+        return;
+    }
+
+    int width, height;
+    SDL_QueryTexture(indicatorTexture, NULL, NULL, &width, &height);
+    indicatorRect = { 985, 20, width, height };  // Set rect to the size of the texture
+}
+
+void MyGame::renderIndicator(SDL_Renderer* renderer) {
+    if (indicatorTexture != nullptr) {
+        SDL_RenderCopy(renderer, indicatorTexture, NULL, &indicatorRect);
+    }
+}
+
 // Send heartbeat to server
 void MyGame::prepareHeartbeat() {
     if (SDL_GetTicks() > nextSendTime) {
         sendHeartbeat("HEARTBEAT, " + std::to_string(game_data.player));
         nextSendTime = SDL_GetTicks() + 1000;
+    }
+}
+
+// Audio
+void MyGame::loadAudio() {
+    goalSound = Mix_LoadWAV("assets/audio/GoalSound.wav");
+    if (!goalSound) {
+        std::cerr << "Failed to load goal sound: " << Mix_GetError() << std::endl;
+    }
+
+    kickSound = Mix_LoadWAV("assets/audio/KickSound.mp3");
+    if (!kickSound) {
+        std::cerr << "Failed to load kick sound: " << Mix_GetError() << std::endl;
+    }
+}
+
+void MyGame::playSoundEffect(const std::string& soundName) {
+    Mix_Chunk* soundToPlay = nullptr;
+
+    if (soundName == "goal") {
+        soundToPlay = goalSound;
+    }
+    else if (soundName == "kick") {
+        soundToPlay = kickSound;
+    }
+
+    if (soundToPlay) {
+        if (Mix_PlayChannel(-1, soundToPlay, 0) == -1) {
+            std::cerr << "Failed to audio: " << Mix_GetError() << std::endl;
+        }
     }
 }
