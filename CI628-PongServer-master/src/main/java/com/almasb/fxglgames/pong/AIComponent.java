@@ -41,22 +41,9 @@ public class AIComponent extends Component {
     @Override
     public void onUpdate(double tpf) {
         // Don't handle AI movement until a player has moved
-        if (FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(0).getX() != getAppWidth() / 4) {
+        if (FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(0).getX() != 320 || FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(0).getY() != 380 || FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(1).getX() != 940 || FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(1).getY() != 380) {
             handleAIMovement();
         }
-        /*checkHitScreenBounds();
-        double BallX = FXGL.getGameWorld().getEntitiesByComponent(BallComponent.class).get(0).getX();
-        double BallY = FXGL.getGameWorld().getEntitiesByComponent(BallComponent.class).get(0).getY();
-        //System.out.println(FXGL.getGameWorld().getEntitiesByComponent(AIComponent.class).get(0).getPosition()); THIS GETS POSITION OF TEAM 1 AI
-        Point2D AiTeam1 = FXGL.getGameWorld().getEntitiesByComponent(AIComponent.class).get(0).getPosition();
-        Point2D AiTeam2 = FXGL.getGameWorld().getEntitiesByComponent(AIComponent.class).get(1).getPosition();
-        //System.out.println(AiTeam1.distance(AiTeam2));
-        //physics.setVelocityY(10);
-       if (AiTeam1.distance(AiTeam2) > 100) {
-            moveAI(BallX, BallY);
-        } else {
-            moveAway();
-        }*/
     }
 
     private void handleAIMovement() {
@@ -102,6 +89,9 @@ public class AIComponent extends Component {
                 physics.setVelocityX(-80);
                 state = State.SWITCH_HALF;
             } else {
+                if (state == State.SWITCH_HALF) {
+                    physics.setVelocityX(0);
+                }
                 state = State.IDLE;
             }
         }
@@ -115,6 +105,9 @@ public class AIComponent extends Component {
                 state = State.SWITCH_HALF;
                 physics.setVelocityX(-80);
             } else {
+                if (state == State.SWITCH_HALF) {
+                    physics.setVelocityX(0);
+                }
                 state = State.IDLE;
             }
         }
@@ -132,36 +125,41 @@ public class AIComponent extends Component {
                 double ballVelocityX = (BallX - lastX) * 60;
                 double ballVelocityY = (BallY - lastY) * 60;
 
-                System.out.println("Ball velocity - X: " + ballVelocityX + ", Y: " + ballVelocityY);
-
                 // Only recalculate if its been 3 seconds since last
-                if (currentTime - lastUpdateTime >= 3) {
+                if (currentTime - lastUpdateTime >= 1) {
                     lastUpdateTime = currentTime;
                     predictedBallX = BallX + (ballVelocityX * 2);
                     predictedBallY = BallY + (ballVelocityY * 2);
                 }
 
-                if (Math.abs(entity.getX() - predictedBallX) > 20) {
-                    if (predictedBallX > entity.getX()) {
-                        physics.setVelocityX(80);
-                    } else if (predictedBallX < entity.getX()){
-                        physics.setVelocityX(-80);
-                    } else {
-                        physics.setVelocityX(0);
-                    }
+                if((entity.getX() <= 640 && predictedBallX <= 640) || (entity.getX() > 640 && predictedBallX > 640)) {
+                        if (Math.abs(entity.getX() - predictedBallX) > 0) {
+                            if (predictedBallX > entity.getX()) {
+                                physics.setVelocityX(80);
+                            } else if (predictedBallX < entity.getX()) {
+                                physics.setVelocityX(-80);
+                            } else {
+                                physics.setVelocityX(0);
+                            }
+                        } else {
+                            physics.setVelocityX(0);
+                        }
+
+
+                        if (Math.abs(entity.getY() - predictedBallY) > 0) {
+                            if (predictedBallY > entity.getY()) {
+                                physics.setVelocityY(80);
+                            } else if (predictedBallY < entity.getY()) {
+                                physics.setVelocityY(-80);
+                            } else {
+                                physics.setVelocityY(0);
+                            }
+                        } else {
+                            physics.setVelocityY(0);
+                        }
+
                 } else {
                     physics.setVelocityX(0);
-                }
-
-                if (Math.abs(entity.getY() - predictedBallY) > 20) {
-                    if (predictedBallY > entity.getY()) {
-                        physics.setVelocityY(80);
-                    } else if (predictedBallY < entity.getY()) {
-                        physics.setVelocityY(-80);
-                    } else {
-                        physics.setVelocityY(0);
-                    }
-                } else {
                     physics.setVelocityY(0);
                 }
             }
@@ -298,35 +296,3 @@ public class AIComponent extends Component {
         }
     }
 }
-
-
-/* MORE EFFICIENT CODE TO BE IMPLEMENTED
-private void handleTeamMovement(Role role, double BallX, double BallY) {
-    // Determine the team index (0 for Team 1, 1 for Team 2)
-    int teamIndex = (role == Role.Team_1) ? 0 : 1;
-
-    // Get Bat and AI components for the specific team
-    BatComponent bat = FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(teamIndex);
-    AIComponent ai = FXGL.getGameWorld().getEntitiesByComponent(AIComponent.class).get(teamIndex);
-
-    // Check positions for both Bat and AI to determine movement
-    if (bat.getX() <= 640 && ai.getX() <= 640) {
-        physics.setVelocityX(100);
-    } else if (bat.getX() > 640 && ai.getX() > 640) {
-        physics.setVelocityX(-100);
-    } else {
-        moveToBall(BallX, BallY);
-    }
-}
-
-@Override
-public void onUpdate(double tpf) {
-    double BallX = FXGL.getGameWorld().getEntitiesByComponent(BallComponent.class).get(0).getX();
-    double BallY = FXGL.getGameWorld().getEntitiesByComponent(BallComponent.class).get(0).getY();
-
-    if (role == Role.Team_1) {
-        handleTeamMovement(Role.Team_1, BallX, BallY);
-    } else if (role == Role.Team_2) {
-        handleTeamMovement(Role.Team_2, BallX, BallY);
-    }
-}*/

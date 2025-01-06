@@ -216,6 +216,13 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
                 player2Bat.stop();
             }
         }, KeyCode.L);
+
+        getInput().addAction(new UserAction("CloseServer") {
+            @Override
+            protected void onAction() {
+                FXGL.getGameController().exit();
+            }
+        }, KeyCode.BACK_SPACE);
     }
 
     @Override
@@ -224,28 +231,6 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
         vars.put("player2score", 0);
         vars.put("connectedClients",0);
     }
-// Original pre lobby screen
-  /* @Override
-   protected void initGame() {
-        Writers.INSTANCE.addTCPWriter(String.class, outputStream -> new MessageWriterS(outputStream));
-        Readers.INSTANCE.addTCPReader(String.class, in -> new MessageReaderS(in));
-
-        server = getNetService().newTCPServer(55555, new ServerConfig<>(String.class));
-
-        server.setOnConnected(connection -> {
-            connection.addMessageHandlerFX(this);
-        });
-
-        getGameWorld().addEntityFactory(new PongFactory());
-        getGameScene().setBackgroundColor(Color.rgb(50, 50, 50));
-
-        initScreenBounds();
-        initGameObjects();
-
-        var t = new Thread(server.startTask()::run);
-        t.setDaemon(true);
-        t.start();
-    }*/
 
 //////////////////////////////////////
 
@@ -266,20 +251,17 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
             } else if(gameEnded) {
                 System.out.println("Connection attempt rejected: Server Closed.");
                 connection.terminate();
+                connection.getLocalSessionData().clear();
             } else {
                 connection.addMessageHandlerFX(this);
                 // Increment the connected client count
                 connectedPlayers++;
-
-
                 // Log the number of clients connected
                 System.out.println("Client connected. Total clients: " + "," + connectedPlayers);
                 connection.send("PLAYER_JOIN" + connectedPlayers);
-
                 connection.getLocalSessionData().setValue("HeartBeatTime", System.currentTimeMillis() + 2000);
                 connection.getLocalSessionData().setValue("ID", connectedPlayers);
                 connection.getLocalSessionData().setValue("Active", true);
-
                 // Once two clients are connected, set gameStarted to true and start the game
                 if (connectedPlayers >= 2 && !gameStarted) {
                     //connection.addMessageHandlerFX(this);
@@ -288,13 +270,6 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
                 }
             }
         });
-
-
-        // Handle Disconnects //////////////////////////////////////////////////////////////////////
-        server.setOnDisconnected(connection -> {
-            System.out.println("CLIENT DISCONNECT");
-        });
-        //////////////////////////////////////////////////////////////////////////////////////////////
 
         // Set up the game scene (but don’t initialize game objects yet)
         getGameScene().setBackgroundColor(Color.rgb(50, 50, 50));
@@ -323,10 +298,9 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
             @Override
             protected void onCollisionBegin(Entity a, Entity bat) {
                 boolean moveRight;
-                playHitAnimation(bat);
 
-                server.broadcast(bat == player1 ? BALL_HIT_BAT1 : BALL_HIT_BAT2);
-                server.broadcast("AUDIO, 2");
+                //server.broadcast(bat == player1 ? BALL_HIT_BAT1 : BALL_HIT_BAT2);
+                server.broadcast("AUDIO, 1");
                 //System.out.println(bat == player1 || bat == aiTeam1 ? "Hit team 1" : "bauer");
 
                 // Ball needs to go right if team 1 hit it, left if team 2 hit it.
@@ -357,12 +331,13 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
         CollisionHandler goalLineHandler = new CollisionHandler(EntityType.BALL, EntityType.GOAL_LINE){
             @Override
             protected void onCollisionBegin(Entity a, Entity goalLine) {
+                server.broadcast("AUDIO, 2");
                 //server.broadcast(goalLine == goalLine1 ? "true": "false");
                 inc(goalLine == goalLine1 ? "player2score": "player1score", +1);
                 server.broadcast("SCORES," + geti("player1score") + "," + geti("player2score"));
                 //ballComp.respawn = true;
                 resetObjects();
-                if (geti("player1score") == 2 || geti("player2score") == 2) {
+                if (geti("player1score") == 6 || geti("player2score") == 6) {
                     endGameState();
                 }
             }
@@ -380,11 +355,6 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
         MainUIController controller = new MainUIController();
         UI ui = getAssetLoader().loadUI("main.fxml", controller);
 
-        /*var brickTexture = getAssetLoader().loadTexture("Untitled.jpg");
-        brickTexture.setTranslateY(80);
-
-        getGameScene().addUINode(brickTexture);*/
-
         controller.getLabelScorePlayer().textProperty().bind(getip("player1score").asString());
         controller.getLabelScoreEnemy().textProperty().bind(getip("player2score").asString());
 
@@ -398,13 +368,11 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
             if (gameEnded) {
                 return; // Skip updates if the game has ended
             }
-            // Check if both players are initialized
+
+            // Check if both players have joined and game is playing.
             if (gameStarted) {
                 // Ensure the game data message is constructed only if both players exist
                 var message = "GAME_DATA," + player1.getY() + "," + player2.getY() + "," + ball.getX() + "," + ball.getY() + "," + player1.getX() + "," + player2.getX() + "," + aiTeam1.getX() + "," + aiTeam1.getY() + "," + aiTeam2.getX() + "," + aiTeam2.getY();
-
-                // Print the message to the server console
-                System.out.println("Server Message: " + message);
 
                 // Broadcast the game data to all clients
                 server.broadcast(message);
@@ -421,87 +389,15 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
                         int clientID = connection.getLocalSessionData().getValue("ID");
                         connection.terminate();
                         gameEnded = true;
-                        System.out.println("Client " + clientID + " disconnected!");
                         connection.getLocalSessionData().setValue("Active", false);
                         gameOverDisconnect(clientID);
+                        endGameState();
                     }
                 }
 
             }
         }
     }
-
-    /*
-    @Override
-    protected void onUpdate(double tpf) {
-        if (!server.getConnections().isEmpty())
-        {
-            if(!gameStarted){
-                processLobbyInformation();
-                return;
-            }
-
-            var message = "GAME_DATA," + player1.getY() + "," + player2.getY() + "," + ball.getX() + "," + ball.getY() + "," + player1.getX() + "," + player2.getX() + "," + aiTeam1.getX() + "," + aiTeam1.getY() + "," + aiTeam2.getX() + "," + aiTeam2.getY();
-
-            // Print the message to the server console
-            System.out.println("Server Message: " + message);
-
-            // Broadcast the game data to all clients
-            server.broadcast(message);
-
-            //TODO replace with heartbeat function
-            //For all client connections (active and inactive)
-            for(Connection connection: server.getConnections())
-            {
-                //Checks
-                if(!connection.isConnected())
-                    continue;
-
-                if(!(boolean)connection.getLocalSessionData().getValue("Connected"))
-                    continue;
-
-                //Setup
-                long lastHeartBeatTime = connection.getLocalSessionData().getValue("HeartBeatTime");
-
-                //Check last Signal Time from client
-                if(System.currentTimeMillis() > lastHeartBeatTime + 3000){
-                    //connection.terminate();
-                    int connectionID = connection.getLocalSessionData().getValue("ID");
-                    System.out.println("Client " + connectionID + " disconnected!");
-                    connection.getLocalSessionData().setValue("Connected", false);
-                    inc("connectedClients", -1);
-
-                    //If not a spectator, make linked player disconnect
-                    if(connectionID != -1)
-                        connectedPlayers.get(connectionID).getComponent(BatComponent.class).connected = false;
-                }
-            }
-
-            //Add spectators to game if one of the main clients disconnect
-            for(int i = 0; i < connectedPlayers.size(); i++)
-            {
-                if(!connectedPlayers.get(i).getComponent(BatComponent.class).connected)
-                {
-                    for(Connection connection : server.getConnections())
-                    {
-                        int id = connection.getLocalSessionData().getValue("ID");
-                        if((boolean)connection.getLocalSessionData().getValue("Connected")  && id == -1)
-                        {
-                            connection.getLocalSessionData().setValue("ID", i);
-                            connection.send("ID," + i);
-                            connectedPlayers.get(i).getComponent(BatComponent.class).connected = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if(server.getConnections().size() < 2){
-            //add AI?
-            //TODO
-        }
-    }
-    */
 
     private void resetObjects() {
         FXGL.runOnce(() -> {
@@ -524,16 +420,10 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
         getInput().clearAll();
 
         getPhysicsWorld().clearCollisionHandlers();
-        System.out.println(geti("player1score") == 1 ? "Player 1 wins" : (geti("player2score") == 1 ? "Player 2 wins" : ""));
-        var result = geti("player1score") == 1 ? "1" : (geti("player2score") == 1 ? "2" : "");
+        System.out.println("Game over, press BACKSPACE to close server.");
+        System.out.println(geti("player1score") == 6 ? "Player 1 wins" : (geti("player2score") == 6 ? "Player 2 wins" : ""));
+        var result = geti("player1score") == 6 ? "1" : (geti("player2score") == 6 ? "2" : "");
         server.broadcast("GAME_ENDED," + result);
-
-        getInput().addAction(new UserAction("CloseServer") {
-            @Override
-            protected void onAction() {
-                FXGL.getGameController().exit();
-            }
-        }, KeyCode.BACK_SPACE);
     }
 
     private void initScreenBounds() {
@@ -562,85 +452,9 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
         ballComp = ball.getComponent(BallComponent.class); 
         aiTeam1Comp = aiTeam1.getComponent(AIComponent.class);
         aiTeam2Comp = aiTeam2.getComponent(AIComponent.class);
-    }
-
-    private void playHitAnimation(Entity bat) {
-        animationBuilder()
-                .autoReverse(true)
-                .duration(Duration.seconds(0.5))
-                .interpolator(Interpolators.BOUNCE.EASE_OUT())
-                .rotate(bat)
-                .from(FXGLMath.random(-25, 25))
-                .to(0)
-                .buildAndPlay();
-    }
-
+    } 
     /////////////////////////////////////////////////////////////////////////////
 
-    private void processLobbyInformation()
-    {
-        //checkHeartBeats();
-        //swapPlayer1();
-        //spectatorsToPlayers();
-    }
-
-    /*
-    private void spectatorsToPlayers()
-    {
-        for(int i = 0; i < connectedPlayers.size(); i++)
-        {
-            if(!connectedPlayers.get(i).getComponent(BatComponent.class).connected)
-            {
-                for(Connection connection : server.getConnections())
-                {
-                    int id = connection.getLocalSessionData().getValue("ID");
-                    if((boolean)connection.getLocalSessionData().getValue("Connected")  && id == -1)
-                    {
-                        connection.getLocalSessionData().setValue("ID", i);
-                        connection.send("ID," + i);
-                        connectedPlayers.get(i).getComponent(BatComponent.class).connected = true;
-                    }
-                }
-            }
-        }
-    }*/
-
-/*
-    private void checkHeartBeats()
-    {
-        if (server.getConnections().isEmpty())
-            return;
-
-        //For all client connections (active and inactive)
-        for(Connection connection: server.getConnections())
-        {
-            //Checks
-            if(!connection.isConnected())
-                continue;
-
-            if(!(boolean)connection.getLocalSessionData().getValue("Connected"))
-                continue;
-
-            //Setup
-            long lastHeartBeatTime = connection.getLocalSessionData().getValue("HeartBeatTime");
-
-            //Check last Signal Time from client
-            if(System.currentTimeMillis() > lastHeartBeatTime + 4000){
-                //connection.terminate();
-                int connectionID = connection.getLocalSessionData().getValue("ID");
-                System.out.println("Client " + connectionID + " disconnected!");
-                connection.getLocalSessionData().setValue("Connected", false);
-                inc("connectedClients", -1);
-                server.broadcast("CONNECTEVENT," + geti("connectedClients"));
-
-                //If not a spectator, make linked player disconnect
-                if(connectionID != -1)
-                    connectedPlayers.get(connectionID).getComponent(BatComponent.class).connected = false;
-
-            }
-        }
-    }
- */
 
     private void gameOverDisconnect(int loserClientID){
         for (Connection connection : server.getConnections()) {
@@ -649,7 +463,6 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
             if (clientId != loserClientID) {
                 // Send the message to the client with the matching ID
                 connection.send("OPPONENT_DISCONNECT");
-                System.out.println("Message sent to client " + clientId);
                 break; // Exit the loop once the message has been sent
             }
         }
@@ -659,7 +472,6 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
     @Override
     public void onReceive(Connection<String> connection, String message) {
         var tokens = message.split(",");
-
         // Check if the message starts with "HEARTBEAT"
         if (tokens.length > 1 && tokens[1].trim().equals("HEARTBEAT")) {
             System.out.println("Heartbeat received");
@@ -669,8 +481,6 @@ public class PongApp extends GameApplication implements MessageHandler<String> {
         }
 
         if (gameStarted && !gameEnded) {
-            //var tokens = message.split(",");
-
             Arrays.stream(tokens).skip(1).forEach(key -> {
                 if (key.endsWith("_DOWN")) {
                     getInput().mockKeyPress(KeyCode.valueOf(key.substring(0, 1)));
