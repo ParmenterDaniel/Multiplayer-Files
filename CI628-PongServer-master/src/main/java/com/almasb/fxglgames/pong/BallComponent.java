@@ -45,8 +45,8 @@ public class BallComponent extends Component {
 
     @Override
     public void onUpdate(double tpf) {
-        if (FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(0).getX() != getAppWidth() / 4) {
-            limitVelocity();
+        // Don't handle ball movement until a player has moved.
+        if (FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(0).getX() != 320 || FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(0).getY() != 380 || FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(1).getX() != 940 || FXGL.getGameWorld().getEntitiesByComponent(BatComponent.class).get(1).getY() != 380) {
             slowDownBall();
             screenBoundsCollision();
             checkOffscreen();
@@ -55,24 +55,6 @@ public class BallComponent extends Component {
 
     }
 
-    private void limitVelocity() {
-     /*   // we don't want the ball to move too slow or fast in X direction
-        if (abs(physics.getVelocityX()) < 3 * 60) {
-            physics.setVelocityX(signum(physics.getVelocityX()) * 3 * 60);
-        }
-        if (abs(physics.getVelocityX()) > 3 * 60) {
-            physics.setVelocityX(signum(physics.getVelocityX()) * 3 * 60);
-        }
-
-        // we don't want the ball to move too fast or slow in Y direction
-        if (abs(physics.getVelocityY()) > 3 * 60) {
-            physics.setVelocityY(signum(physics.getVelocityY()) * 3 * 60);
-        }
-
-        if (abs(physics.getVelocityY()) < 2 * 60) {
-            physics.setVelocityY(signum(physics.getVelocityY()) * 3 * 60);
-        }  */
-    }
 
     // this is a hack:
     // we use a physics engine, so it is possible to push the ball through a wall to outside of the screen
@@ -134,5 +116,4 @@ public class BallComponent extends Component {
         }
     }
 
-    // change code to better handle how the ball bounces off the bat when stationary
 }

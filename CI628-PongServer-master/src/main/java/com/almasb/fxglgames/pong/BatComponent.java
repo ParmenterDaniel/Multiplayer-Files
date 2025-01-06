@@ -55,7 +55,6 @@ public class BatComponent extends Component {
     public void up() {
         if (entity.getBottomY() >= 134) {
             physics.setVelocityY(-BAT_SPEED);
-            //System.out.println("Y Pos: " + entity.getPosition().getY());
         }else
             stop();
     }
@@ -68,14 +67,14 @@ public class BatComponent extends Component {
     }
 
     public void left() {
-        if (entity.getX() >= 5 - (BAT_SPEED_X/60) )
+        if (entity.getX() >= 60 - (BAT_SPEED_X/60) )
             physics.setVelocityX(-BAT_SPEED_X);
         else
             stop();
     }
 
     public void right() {
-        if (entity.getRightX() <= FXGL.getAppWidth() - (BAT_SPEED_X/60))
+        if (entity.getRightX() <= FXGL.getAppWidth() - 60 - (BAT_SPEED_X/60))
             physics.setVelocityX(BAT_SPEED_X);
         else
             stop();
@@ -104,12 +103,4 @@ public class BatComponent extends Component {
             ));
         }
     }
-
-    /* Handle bats colliding with goal.
-    @Override
-    public void onUpdate(double tpf) {
-        double BallX = FXGL.getGameWorld().getEntitiesByComponent(BallComponent.class).get(0).getX();
-        double BallY = FXGL.getGameWorld().getEntitiesByComponent(BallComponent.class).get(0).getY();
-        moveAI(BallX,BallY);
-    }*/
 }
